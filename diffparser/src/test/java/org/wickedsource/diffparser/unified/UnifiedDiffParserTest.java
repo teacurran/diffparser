@@ -50,4 +50,12 @@ public class UnifiedDiffParserTest {
         Assert.assertEquals(Line.LineType.NEUTRAL, lines.get(5).getLineType());
 
     }
+
+    @Test
+    public void testParseGit() throws Exception {
+        // given
+        DiffParser parser = new UnifiedDiffParser();
+        InputStream in = getClass().getResourceAsStream("git.diff");
+    }
+
 }

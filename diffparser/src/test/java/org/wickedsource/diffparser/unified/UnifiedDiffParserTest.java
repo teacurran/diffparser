@@ -56,6 +56,13 @@ public class UnifiedDiffParserTest {
         // given
         DiffParser parser = new UnifiedDiffParser();
         InputStream in = getClass().getResourceAsStream("git.diff");
+
+        // when
+        List<Diff> diffs = parser.parse(in);
+
+        // then
+        Assert.assertNotNull(diffs);
+
     }
 
 }

@@ -15,6 +15,9 @@
  */
 package org.wickedsource.diffparser.unified;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -90,6 +93,7 @@ public enum ParserState {
             String line = window.getFocusLine();
             if (matchesHunkStartPattern(line)) {
                 logTransition(line, TO_FILE, HUNK_START);
+
                 return HUNK_START;
             } else {
                 throw new IllegalStateException("A TO_FILE line ('+++') must be directly followed by a HUNK_START line ('@@')!");
@@ -252,7 +256,7 @@ public enum ParserState {
     }
 
     protected boolean matchesHunkStartPattern(String line) {
-        return line.startsWith("@@") && line.endsWith("@@");
+        return line.matches("\\@\\@ -[0-9]+,[0-9]+ \\+[0-9]+,[0-9]+ \\@\\@.*");
     }
 
     protected boolean matchesEndPattern(String line, ParseWindow window) {

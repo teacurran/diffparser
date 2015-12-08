@@ -115,7 +115,7 @@ public class UnifiedDiffParser implements DiffParser {
     }
 
     private void parseHunkStart(Diff currentDiff, String currentLine) {
-        Pattern pattern = Pattern.compile("^.*-([0-9]+),([0-9]+) \\+([0-9]+),([0-9]+).*$");
+        Pattern pattern = Pattern.compile("^.*-([0-9]+),([0-9]+) \\+([0-9]+),([0-9]+) \\@\\@\\s?(.*)$");
         Matcher matcher = pattern.matcher(currentLine);
         if (matcher.matches()) {
             String range1Start = matcher.group(1);
@@ -130,6 +130,24 @@ public class UnifiedDiffParser implements DiffParser {
             hunk.setFromFileRange(fromRange);
             hunk.setToFileRange(toRange);
             currentDiff.getHunks().add(hunk);
+
+            String firstLine = matcher.group(5);
+            if (firstLine != null && !firstLine.isEmpty()) {
+                if (firstLine.startsWith("-")) {
+                    // todo: logging should happen here
+                    // logTransition(contentLine, HUNK_START, FROM_LINE);
+                    parseFromLine(currentDiff, firstLine);
+                } else if (firstLine.startsWith("+")) {
+                    // todo: logging should happen here
+                    //logTransition(contentLine, HUNK_START, TO_LINE);
+                    parseToLine(currentDiff, firstLine);
+                } else {
+                    // todo: logging should happen here
+                    //logTransition(contentLine, HUNK_START, NEUTRAL_LINE);
+                    parseNeutralLine(currentDiff, firstLine);
+                }
+            }
+
         } else {
             throw new IllegalStateException(String.format("No line ranges found in the following hunk start line: '%s'. Expected something " +
                     "like '-1,5 +3,5'.", currentLine));

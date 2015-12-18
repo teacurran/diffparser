@@ -1,5 +1,8 @@
 package org.wickedsource.diffparser.unified;
 
+import java.io.InputStream;
+import java.util.List;
+
 import junit.framework.Assert;
 import org.testng.annotations.Test;
 import org.wickedsource.diffparser.api.DiffParser;
@@ -8,10 +11,7 @@ import org.wickedsource.diffparser.api.model.Diff;
 import org.wickedsource.diffparser.api.model.Hunk;
 import org.wickedsource.diffparser.api.model.Line;
 
-import java.io.InputStream;
-import java.util.List;
-
-public class UnifiedDiffParserTest {
+public class GitDiffParserTest {
 
     @Test
     public void testParse() throws Exception {
@@ -50,4 +50,19 @@ public class UnifiedDiffParserTest {
         Assert.assertEquals(Line.LineType.NEUTRAL, lines.get(5).getLineType());
 
     }
+
+    @Test
+    public void testParseGit() throws Exception {
+        // given
+        DiffParser parser = new UnifiedDiffParser();
+        InputStream in = getClass().getResourceAsStream("git.diff");
+
+        // when
+        List<Diff> diffs = parser.parse(in);
+
+        // then
+        Assert.assertNotNull(diffs);
+
+    }
+
 }

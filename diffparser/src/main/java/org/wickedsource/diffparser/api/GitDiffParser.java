@@ -15,6 +15,16 @@
  */
 package org.wickedsource.diffparser.api;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import org.wickedsource.diffparser.api.model.Diff;
 import org.wickedsource.diffparser.api.model.Hunk;
 import org.wickedsource.diffparser.api.model.Line;
@@ -22,36 +32,26 @@ import org.wickedsource.diffparser.api.model.Range;
 import org.wickedsource.diffparser.unified.ParserState;
 import org.wickedsource.diffparser.common.ResizingParseWindow;
 
-import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 /**
- * A parser that parses a unified diff from text into a {@link org.wickedsource.diffparser.api.model.Diff} data structure.
+ * A parser that parses a unified diff from text into a {@link Diff} data structure.
  * <p/>
  * An example of a unified diff this parser can handle is the following:
  * <pre>
- * Modified: trunk/test1.txt
- * ===================================================================
- * --- /trunk/test1.txt	2013-10-23 19:41:56 UTC (rev 46)
- * +++ /trunk/test1.txt	2013-10-23 19:44:39 UTC (rev 47)
- * @@ -1,4 +1,3 @@
- * test1
- * -test1
- * +test234
- * -test1
- * \ No newline at end of file
- * @@ -5,9 +6,10 @@
- * -test1
- * -test1
- * +test2
- * +test2
+ * diff --git a/client/src/main/java/com/wirelust/bitbucket/client/BitbucketV2Client.java b/client/src/main/java/com/wirelust/bitbucket/client/BitbucketV2Client.java
+ * index da14de9..eaf26fa 100644
+ * --- a/client/src/main/java/com/wirelust/bitbucket/client/BitbucketV2Client.java
+ * +++ b/client/src/main/java/com/wirelust/bitbucket/client/BitbucketV2Client.java
+ * @@ -200,7 +200,7 @@ public Response getPullRequestDiff(
+ *  	@GET
+ *  	@Path("/2.0/snippets/{username}")
+ *  	@Produces(MediaType.TEXT_PLAIN)
+ * -	public Response getSnippitsByUsername(
+ * +	public Response getSnippetsByUsername(
+ *  		@PathParam("username") String username
+ *  	);
  * </pre>
- * Note that the TAB character and date after the file names are not being parsed but instead cut off.
  */
-public class UnifiedDiffParser implements DiffParser {
+public class GitDiffParser implements DiffParser {
 
     @Override
     public List<Diff> parse(InputStream in) {
@@ -115,7 +115,7 @@ public class UnifiedDiffParser implements DiffParser {
     }
 
     private void parseHunkStart(Diff currentDiff, String currentLine) {
-        Pattern pattern = Pattern.compile("^.*-([0-9]+),([0-9]+) \\+([0-9]+),([0-9]+).*$");
+        Pattern pattern = Pattern.compile("^.*-([0-9]+),([0-9]+) \\+([0-9]+),([0-9]+) \\@\\@\\s?(.*)$");
         Matcher matcher = pattern.matcher(currentLine);
         if (matcher.matches()) {
             String range1Start = matcher.group(1);
@@ -130,6 +130,24 @@ public class UnifiedDiffParser implements DiffParser {
             hunk.setFromFileRange(fromRange);
             hunk.setToFileRange(toRange);
             currentDiff.getHunks().add(hunk);
+
+            String firstLine = matcher.group(5);
+            if (firstLine != null && !firstLine.isEmpty()) {
+                if (firstLine.startsWith("-")) {
+                    // todo: logging should happen here
+                    // logTransition(contentLine, HUNK_START, FROM_LINE);
+                    parseFromLine(currentDiff, firstLine);
+                } else if (firstLine.startsWith("+")) {
+                    // todo: logging should happen here
+                    //logTransition(contentLine, HUNK_START, TO_LINE);
+                    parseToLine(currentDiff, firstLine);
+                } else {
+                    // todo: logging should happen here
+                    //logTransition(contentLine, HUNK_START, NEUTRAL_LINE);
+                    parseNeutralLine(currentDiff, firstLine);
+                }
+            }
+
         } else {
             throw new IllegalStateException(String.format("No line ranges found in the following hunk start line: '%s'. Expected something " +
                     "like '-1,5 +3,5'.", currentLine));
